@@ -2,6 +2,12 @@
 
 Aplicación de escritorio para Windows que extrae métricas de archivos OTDR (`.sor`) y las exporta a Excel.
 
+## Captura de pantalla
+
+![Analizador SOR](assets/screenshot.png)
+
+> **Para contribuidores:** reemplaza `assets/screenshot.png` con una captura real de la aplicación corriendo en Windows.
+
 ## ¿Qué hace?
 
 Lee archivos de traza OTDR en formato Bellcore SR-4731 (generados por equipos EXFO) y por cada filamento extrae:
@@ -81,3 +87,25 @@ sor_analyzer/
 - Formato: Bellcore SR-4731 rev 2.0
 - Python: 3.10+
 - OS: Windows (GUI), Linux/macOS (solo parseo/exportación)
+
+## Mejoras propuestas
+
+### Alta prioridad
+
+- **Soporte multidireccional** — Procesar también los archivos `corta` y `larga` de cada fibra y mostrarlos como columnas separadas en el Excel, permitiendo comparar ambas direcciones de medición.
+- **Validación de umbrales** — Marcar en rojo en el Excel los empalmes que superen un umbral configurable (ej. pérdida > 0.5 dB), facilitando identificar problemas sin revisar manualmente cada valor.
+- **Vista previa en la app** — Mostrar una tabla con los datos parseados dentro de la misma ventana antes de exportar, para verificar que los datos son correctos.
+
+### Media prioridad
+
+- **Compatibilidad con más equipos OTDR** — Actualmente probado solo con EXFO FTBx. Agregar soporte para Anritsu, VIAVI (JDSU), Yokogawa y AFL, que usan variantes del mismo formato Bellcore SR-4731.
+- **Exportar a PDF** — Generar un informe PDF con formato de cartilla, listo para entregar sin necesitar Excel.
+- **Gráfico de la traza** — Mostrar la curva de atenuación OTDR (dB vs. km) usando `matplotlib`, con los eventos marcados, lo que permite detectar anomalías visualmente.
+- **Soporte doble longitud de onda** — Algunos equipos miden a 1310 nm y 1550 nm simultáneamente. Separar ambos en hojas distintas del Excel.
+
+### Baja prioridad
+
+- **Drag & drop** — Permitir arrastrar la carpeta directamente a la ventana en lugar de usar el selector de carpetas.
+- **Historial de mediciones** — Comparar la medición actual con una anterior para detectar degradación de empalmes en el tiempo.
+- **Filtro por fibra** — Seleccionar qué fibras incluir en la exportación (útil cuando solo algunas fibras tienen datos nuevos).
+- **Configuración persistente** — Guardar la última carpeta usada y preferencias en un archivo `.json` para no tener que reconfigurar cada vez.
