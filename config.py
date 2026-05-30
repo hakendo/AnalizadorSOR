@@ -16,13 +16,14 @@ DEFAULT = {
     'last_folder':    '',
     'otdr_equipment': 'exfo',
     'directions':     ['normal'],
-    'fibra_filter':   {},        # {cable_name: [fibra_num, ...]} — lista vacía = todas
+    'fibra_filter':   {},
     'history_path':   '',
     'thresholds': {
         'perdida_union_db':      0.5,
         'perdida_promedio_dbkm': 0.25,
         'perdida_intervalo_db':  2.0,
     },
+    'columns': None,    # None = all default columns; populated on first save
 }
 
 

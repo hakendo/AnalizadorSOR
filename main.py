@@ -9,7 +9,8 @@ from tkinter import ttk, filedialog, messagebox
 
 import config as cfg_mod
 from sor_parser import scan_folder, parse_sor
-from excel_exporter import export_to_excel, build_output_path, OPENPYXL_OK
+from excel_exporter import (export_to_excel, build_output_path, OPENPYXL_OK,
+                            ALL_DETAIL_COLS, ALL_SUMMARY_COLS, default_column_config)
 
 # ── Drag-and-drop (opcional) ───────────────────────────────────────────────
 try:
@@ -67,6 +68,11 @@ class App(_BASE):
         tk.Label(bar, text="Analizador SOR — Fibra Óptica",
                  font=("Segoe UI", 13, "bold"),
                  fg="white", bg=C_DARK).pack(side="left", padx=14)
+        tk.Button(bar, text="📋  Columnas Excel",
+                  command=self._open_columns_dialog,
+                  bg=C_MED, fg="white",
+                  font=("Segoe UI", 9), relief="flat",
+                  padx=10, pady=3).pack(side="right", padx=4)
         tk.Button(bar, text="⚙  Configuración",
                   command=self._open_settings,
                   bg=C_MED, fg="white",
@@ -264,6 +270,105 @@ class App(_BASE):
         tk.Label(self._cable_frame,
                  text=f"Total: {len(self._cables)} cable(s), {total_f} fibra(s)",
                  bg=C_BG, fg="#666", font=("Segoe UI", 8)).pack(anchor="w", pady=(4, 0))
+
+    # ── Column selector dialog ────────────────────────────────────────────
+    def _open_columns_dialog(self) -> None:
+        col_cfg = self._cfg.get('columns') or default_column_config()
+
+        dlg = tk.Toplevel(self)
+        dlg.title("Columnas del Excel")
+        dlg.geometry("520x480")
+        dlg.resizable(False, True)
+        dlg.grab_set()
+        dlg.configure(bg=C_BG)
+
+        tk.Label(dlg,
+                 text="Selecciona las columnas que aparecerán en el Excel.",
+                 bg=C_BG, fg=C_DARK, font=("Segoe UI", 9)).pack(pady=(10, 4))
+
+        nb = ttk.Notebook(dlg)
+        nb.pack(fill="both", expand=True, padx=12, pady=4)
+
+        tab_vars: dict[str, dict[str, tk.BooleanVar]] = {}
+
+        def _make_tab(name: str, registry: list[dict], enabled_keys: list[str]) -> None:
+            tab = tk.Frame(nb, bg=C_BG)
+            nb.add(tab, text=f"  {name}  ")
+
+            canvas = tk.Canvas(tab, bg=C_BG, highlightthickness=0)
+            sb = ttk.Scrollbar(tab, orient="vertical", command=canvas.yview)
+            inner = tk.Frame(canvas, bg=C_BG)
+            inner.bind("<Configure>",
+                       lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+            canvas.create_window((0, 0), window=inner, anchor="nw")
+            canvas.configure(yscrollcommand=sb.set)
+            canvas.pack(side="left", fill="both", expand=True)
+            sb.pack(side="right", fill="y")
+
+            enabled_set = set(enabled_keys)
+            vars_for_tab: dict[str, tk.BooleanVar] = {}
+            tab_vars[name] = vars_for_tab
+
+            for col in registry:
+                key      = col['key']
+                required = col.get('required', False)
+                var = tk.BooleanVar(value=(key in enabled_set))
+                vars_for_tab[key] = var
+
+                row = tk.Frame(inner, bg=C_BG)
+                row.pack(fill="x", padx=12, pady=2)
+
+                state = "disabled" if required else "normal"
+                cb = tk.Checkbutton(row, text=col['label'], variable=var,
+                                    state=state,
+                                    bg=C_BG, fg=C_TEXT, font=("Segoe UI", 9),
+                                    width=30, anchor="w")
+                cb.pack(side="left")
+
+                if required:
+                    tk.Label(row, text="(requerida)", bg=C_BG, fg="#999",
+                             font=("Segoe UI", 8)).pack(side="left")
+
+            # Select all / none shortcuts
+            btn_row = tk.Frame(tab, bg=C_BG)
+            btn_row.pack(side="bottom", fill="x", padx=8, pady=4)
+            tk.Button(btn_row, text="Todas",
+                      command=lambda vd=vars_for_tab, reg=registry:
+                          [vd[c['key']].set(True) for c in reg],
+                      bg=C_LIGHT, relief="flat", padx=8).pack(side="left")
+            tk.Button(btn_row, text="Ninguna",
+                      command=lambda vd=vars_for_tab, reg=registry:
+                          [vd[c['key']].set(False)
+                           for c in reg if not c.get('required')],
+                      bg=C_LIGHT, relief="flat", padx=8).pack(side="left", padx=4)
+            tk.Button(btn_row, text="Predeterminadas",
+                      command=lambda vd=vars_for_tab, reg=registry:
+                          [vd[c['key']].set(c['default']) for c in reg],
+                      bg=C_LIGHT, relief="flat", padx=8).pack(side="left", padx=4)
+
+        _make_tab("Detalle por evento", ALL_DETAIL_COLS,
+                  col_cfg.get('detail',  []))
+        _make_tab("Hoja Resumen",       ALL_SUMMARY_COLS,
+                  col_cfg.get('summary', []))
+
+        # Action buttons
+        btn_row = tk.Frame(dlg, bg=C_BG)
+        btn_row.pack(fill="x", padx=12, pady=(4, 10))
+
+        def _save():
+            new_cfg = {
+                'detail':  [k for k, v in tab_vars["Detalle por evento"].items() if v.get()],
+                'summary': [k for k, v in tab_vars["Hoja Resumen"].items() if v.get()],
+            }
+            self._cfg['columns'] = new_cfg
+            cfg_mod.save(self._cfg)
+            dlg.destroy()
+
+        tk.Button(btn_row, text="Cancelar", command=dlg.destroy,
+                  bg="#DDD", relief="flat", padx=14, pady=5).pack(side="right")
+        tk.Button(btn_row, text="Guardar", command=_save,
+                  bg=C_DARK, fg="white", font=("Segoe UI", 9, "bold"),
+                  relief="flat", padx=14, pady=5).pack(side="right", padx=(0, 6))
 
     # ── Settings dialog ───────────────────────────────────────────────────
     def _open_settings(self) -> None:
@@ -522,6 +627,7 @@ class App(_BASE):
                 output_path,
                 thresholds=self._cfg.get('thresholds'),
                 history_path=history_path,
+                column_config=self._cfg.get('columns'),
             )
             self._status_var.set(f"✓ Exportado: {os.path.basename(output_path)}")
             if sys.platform.startswith("win"):
