@@ -1,0 +1,20 @@
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Output Excel files
+FO_Cartilla_FOS_*.xlsx
+
+# SOR data files (no versionar datos de cliente)
+*.sor
+*.SOR
+
+# OS
+.DS_Store
+Thumbs.db
