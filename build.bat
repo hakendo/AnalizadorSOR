@@ -1,10 +1,12 @@
 @echo off
 echo Instalando dependencias...
-pip install openpyxl pyinstaller
+pip install openpyxl tkinterdnd2 pyinstaller
 
 echo.
 echo Generando ejecutable...
-python -m PyInstaller --onefile --windowed --name "AnalizadorSOR" main.py
+python -m PyInstaller --onefile --windowed --name "AnalizadorSOR" ^
+    --collect-all tkinterdnd2 ^
+    main.py
 
 echo.
 echo Ejecutable generado en:
