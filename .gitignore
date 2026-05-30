@@ -15,6 +15,10 @@ FO_Cartilla_FOS_*.xlsx
 *.sor
 *.SOR
 
+# Config y datos locales
+config.json
+mediciones_historial.json
+
 # OS
 .DS_Store
 Thumbs.db
