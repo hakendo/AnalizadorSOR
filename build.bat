@@ -5,6 +5,14 @@ echo ============================================
 echo  AnalizadorSOR — Instalador / Build
 echo ============================================
 echo.
+echo Uso:
+echo   build.bat           ^<-- compilar para este Windows
+echo   build.bat win7      ^<-- compilar exe compatible con Windows 7
+echo.
+
+:: ── Modo de compatibilidad ────────────────────
+set "TARGET_WIN7=0"
+if /i "%~1"=="win7" set "TARGET_WIN7=1"
 
 :: ── Detectar version de Windows ──────────────
 for /f "tokens=4 delims=[] " %%v in ('ver') do set "WINVER=%%v"
@@ -15,8 +23,11 @@ set "IS_WIN7=0"
 if !WIN_MAJOR! EQU 6 if !WIN_MINOR! EQU 1 set "IS_WIN7=1"
 if !WIN_MAJOR! EQU 6 if !WIN_MINOR! EQU 0 set "IS_WIN7=1"
 
-if "!IS_WIN7!"=="1" (
-    echo Sistema: Windows 7 detectado  ^(Python 3.8 requerido^)
+:: Forzar modo Win7 si se pide explicitamente o si el SO es Win7
+if "!IS_WIN7!"=="1" set "TARGET_WIN7=1"
+
+if "!TARGET_WIN7!"=="1" (
+    echo Modo: compatible con Windows 7  ^(Python 3.8^)
     set "PY_VER=3.8.20"
     if "%PROCESSOR_ARCHITECTURE%"=="x86" (
         set "PY_URL=https://www.python.org/ftp/python/3.8.20/python-3.8.20.exe"
@@ -24,8 +35,9 @@ if "!IS_WIN7!"=="1" (
         set "PY_URL=https://www.python.org/ftp/python/3.8.20/python-3.8.20-amd64.exe"
     )
     set "PIP_PYINSTALLER=pyinstaller<6.0"
+    set "EXE_NAME=AnalizadorSOR_Win7"
 ) else (
-    echo Sistema: Windows 8 / 10 / 11 detectado  ^(Python 3.12 requerido^)
+    echo Modo: Windows 10 / 11  ^(Python 3.12^)
     set "PY_VER=3.12.9"
     if "%PROCESSOR_ARCHITECTURE%"=="x86" (
         set "PY_URL=https://www.python.org/ftp/python/3.12.9/python-3.12.9.exe"
@@ -33,6 +45,7 @@ if "!IS_WIN7!"=="1" (
         set "PY_URL=https://www.python.org/ftp/python/3.12.9/python-3.12.9-amd64.exe"
     )
     set "PIP_PYINSTALLER=pyinstaller"
+    set "EXE_NAME=AnalizadorSOR"
 )
 
 :: ── 1. Verificar Python ──────────────────────
@@ -85,8 +98,8 @@ if %ERRORLEVEL% NEQ 0 (
 
 :: ── 3. Generar ejecutable ────────────────────
 echo.
-echo [3/4] Generando ejecutable AnalizadorSOR.exe...
-python -m PyInstaller --onefile --windowed --name "AnalizadorSOR" ^
+echo [3/4] Generando ejecutable !EXE_NAME!.exe...
+python -m PyInstaller --onefile --windowed --name "!EXE_NAME!" ^
     --collect-all tkinterdnd2 ^
     main.py
 if %ERRORLEVEL% NEQ 0 (
@@ -100,8 +113,13 @@ echo ============================================
 echo  [4/4] Compilacion completada exitosamente!
 echo ============================================
 echo.
+if "!TARGET_WIN7!"=="1" (
+    echo NOTA: Este ejecutable es compatible con Windows 7.
+    echo       No requiere instalar Python en la maquina destino.
+    echo.
+)
 echo Ejecutable generado en:
-echo %~dp0dist\AnalizadorSOR.exe
+echo %~dp0dist\!EXE_NAME!.exe
 echo.
 explorer "%~dp0dist"
 pause
