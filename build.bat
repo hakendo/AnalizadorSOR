@@ -27,14 +27,15 @@ if !WIN_MAJOR! EQU 6 if !WIN_MINOR! EQU 0 set "IS_WIN7=1"
 if "!IS_WIN7!"=="1" set "TARGET_WIN7=1"
 
 if "!TARGET_WIN7!"=="1" (
-    echo Modo: compatible con Windows 7  ^(Python 3.8^)
-    set "PY_VER=3.8.20"
+    echo Modo: compatible con Windows 7  ^(Python 3.7^)
+    set "PY_VER=3.7.9"
     if "%PROCESSOR_ARCHITECTURE%"=="x86" (
-        set "PY_URL=https://www.python.org/ftp/python/3.8.20/python-3.8.20.exe"
+        set "PY_URL=https://www.python.org/ftp/python/3.7.9/python-3.7.9.exe"
     ) else (
-        set "PY_URL=https://www.python.org/ftp/python/3.8.20/python-3.8.20-amd64.exe"
+        set "PY_URL=https://www.python.org/ftp/python/3.7.9/python-3.7.9-amd64.exe"
     )
-    set "PIP_PYINSTALLER=pyinstaller<6.0"
+    set "PIP_PYINSTALLER=pyinstaller==5.13.2"
+    set "PY_CMD=py -3.7"
     set "EXE_NAME=AnalizadorSOR_Win7"
 ) else (
     echo Modo: Windows 10 / 11  ^(Python 3.12^)
@@ -45,6 +46,7 @@ if "!TARGET_WIN7!"=="1" (
         set "PY_URL=https://www.python.org/ftp/python/3.12.9/python-3.12.9-amd64.exe"
     )
     set "PIP_PYINSTALLER=pyinstaller"
+    set "PY_CMD=python"
     set "EXE_NAME=AnalizadorSOR"
 )
 
@@ -89,8 +91,8 @@ if %ERRORLEVEL% NEQ 0 (
 :: ── 2. Instalar dependencias ─────────────────
 echo.
 echo [2/4] Instalando dependencias Python...
-python -m pip install --upgrade pip --quiet
-python -m pip install openpyxl tkinterdnd2 !PIP_PYINSTALLER!
+!PY_CMD! -m pip install --upgrade pip --quiet
+!PY_CMD! -m pip install openpyxl tkinterdnd2 !PIP_PYINSTALLER!
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Fallo la instalacion de dependencias.
     pause & exit /b 1
@@ -100,25 +102,9 @@ if %ERRORLEVEL% NEQ 0 (
 echo.
 echo [3/4] Generando ejecutable !EXE_NAME!.exe...
 
-if "!TARGET_WIN7!"=="1" (
-    :: Empacar DLLs de Windows 8+ que faltan en Win7
-    set "W7D=%WINDIR%\System32"
-    set "W7_FLAGS="
-    if exist "!W7D!\api-ms-win-core-path-l1-1-0.dll"    set "W7_FLAGS=!W7_FLAGS! --add-binary \"!W7D!\api-ms-win-core-path-l1-1-0.dll;.\""
-    if exist "!W7D!\api-ms-win-crt-runtime-l1-1-0.dll"  set "W7_FLAGS=!W7_FLAGS! --add-binary \"!W7D!\api-ms-win-crt-runtime-l1-1-0.dll;.\""
-    if exist "!W7D!\api-ms-win-crt-math-l1-1-0.dll"     set "W7_FLAGS=!W7_FLAGS! --add-binary \"!W7D!\api-ms-win-crt-math-l1-1-0.dll;.\""
-    if exist "!W7D!\api-ms-win-crt-stdio-l1-1-0.dll"    set "W7_FLAGS=!W7_FLAGS! --add-binary \"!W7D!\api-ms-win-crt-stdio-l1-1-0.dll;.\""
-    if exist "!W7D!\api-ms-win-crt-locale-l1-1-0.dll"   set "W7_FLAGS=!W7_FLAGS! --add-binary \"!W7D!\api-ms-win-crt-locale-l1-1-0.dll;.\""
-    if exist "!W7D!\api-ms-win-crt-heap-l1-1-0.dll"     set "W7_FLAGS=!W7_FLAGS! --add-binary \"!W7D!\api-ms-win-crt-heap-l1-1-0.dll;.\""
-    python -m PyInstaller --onefile --windowed --name "!EXE_NAME!" ^
-        --collect-all tkinterdnd2 ^
-        !W7_FLAGS! ^
-        main.py
-) else (
-    python -m PyInstaller --onefile --windowed --name "!EXE_NAME!" ^
-        --collect-all tkinterdnd2 ^
-        main.py
-)
+!PY_CMD! -m PyInstaller --onefile --windowed --name "!EXE_NAME!" ^
+    --collect-all tkinterdnd2 ^
+    main.py
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Fallo la compilacion. Revise los mensajes anteriores.
     pause & exit /b 1
