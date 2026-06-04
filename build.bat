@@ -91,8 +91,8 @@ if %ERRORLEVEL% NEQ 0 (
 :: ── 2. Instalar dependencias ─────────────────
 echo.
 echo [2/4] Instalando dependencias Python...
-!PY_CMD! -m pip install --upgrade pip --quiet
-!PY_CMD! -m pip install openpyxl tkinterdnd2 !PIP_PYINSTALLER!
+%PY_CMD% -m pip install --upgrade pip --quiet
+%PY_CMD% -m pip install openpyxl tkinterdnd2 %PIP_PYINSTALLER%
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Fallo la instalacion de dependencias.
     pause & exit /b 1
@@ -100,9 +100,9 @@ if %ERRORLEVEL% NEQ 0 (
 
 :: ── 3. Generar ejecutable ────────────────────
 echo.
-echo [3/4] Generando ejecutable !EXE_NAME!.exe...
+echo [3/4] Generando ejecutable %EXE_NAME%.exe...
 
-!PY_CMD! -m PyInstaller --onefile --windowed --name "!EXE_NAME!" ^
+%PY_CMD% -m PyInstaller --onefile --windowed --name "%EXE_NAME%" ^
     --collect-all tkinterdnd2 ^
     main.py
 if %ERRORLEVEL% NEQ 0 (
@@ -122,7 +122,7 @@ if "!TARGET_WIN7!"=="1" (
     echo.
 )
 echo Ejecutable generado en:
-echo %~dp0dist\!EXE_NAME!.exe
+echo %~dp0dist\%EXE_NAME%.exe
 echo.
 explorer "%~dp0dist"
 pause
