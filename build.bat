@@ -6,19 +6,51 @@ echo  AnalizadorSOR — Instalador / Build
 echo ============================================
 echo.
 
+:: ── Detectar version de Windows ──────────────
+for /f "tokens=4 delims=[] " %%v in ('ver') do set "WINVER=%%v"
+for /f "tokens=1 delims=." %%a in ("!WINVER!") do set "WIN_MAJOR=%%a"
+for /f "tokens=2 delims=." %%b in ("!WINVER!") do set "WIN_MINOR=%%b"
+
+set "IS_WIN7=0"
+if !WIN_MAJOR! EQU 6 if !WIN_MINOR! EQU 1 set "IS_WIN7=1"
+if !WIN_MAJOR! EQU 6 if !WIN_MINOR! EQU 0 set "IS_WIN7=1"
+
+if "!IS_WIN7!"=="1" (
+    echo Sistema: Windows 7 detectado  ^(Python 3.8 requerido^)
+    set "PY_VER=3.8.20"
+    if "%PROCESSOR_ARCHITECTURE%"=="x86" (
+        set "PY_URL=https://www.python.org/ftp/python/3.8.20/python-3.8.20.exe"
+    ) else (
+        set "PY_URL=https://www.python.org/ftp/python/3.8.20/python-3.8.20-amd64.exe"
+    )
+    set "PIP_PYINSTALLER=pyinstaller<6.0"
+) else (
+    echo Sistema: Windows 8 / 10 / 11 detectado  ^(Python 3.12 requerido^)
+    set "PY_VER=3.12.9"
+    if "%PROCESSOR_ARCHITECTURE%"=="x86" (
+        set "PY_URL=https://www.python.org/ftp/python/3.12.9/python-3.12.9.exe"
+    ) else (
+        set "PY_URL=https://www.python.org/ftp/python/3.12.9/python-3.12.9-amd64.exe"
+    )
+    set "PIP_PYINSTALLER=pyinstaller"
+)
+
 :: ── 1. Verificar Python ──────────────────────
+echo.
 echo [1/4] Verificando Python...
 python --version >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo Python no encontrado. Iniciando instalacion automatica...
     echo.
 
-    set "PY_VER=3.12.9"
-    set "PY_URL=https://www.python.org/ftp/python/3.12.9/python-3.12.9-amd64.exe"
     set "PY_INST=%TEMP%\python_install.exe"
 
-    echo Descargando Python 3.12.9 desde python.org...
-    powershell -NoProfile -Command "Invoke-WebRequest -Uri '!PY_URL!' -OutFile '!PY_INST!' -UseBasicParsing"
+    echo Descargando Python !PY_VER!...
+    powershell -NoProfile -Command "Invoke-WebRequest -Uri '!PY_URL!' -OutFile '!PY_INST!' -UseBasicParsing" >nul 2>&1
+    if !ERRORLEVEL! NEQ 0 (
+        echo   PowerShell no disponible, usando certutil...
+        certutil -urlcache -split -f "!PY_URL!" "!PY_INST!" >nul
+    )
     if !ERRORLEVEL! NEQ 0 (
         echo.
         echo ERROR: No se pudo descargar Python.
@@ -31,7 +63,7 @@ if %ERRORLEVEL% NEQ 0 (
     del "!PY_INST!" >nul 2>&1
 
     echo.
-    echo Python instalado correctamente.
+    echo Python !PY_VER! instalado correctamente.
     echo IMPORTANTE: Abra una nueva ventana CMD y ejecute build.bat nuevamente
     echo para que Windows reconozca Python en el PATH.
     echo.
@@ -45,7 +77,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo.
 echo [2/4] Instalando dependencias Python...
 python -m pip install --upgrade pip --quiet
-python -m pip install openpyxl tkinterdnd2 pyinstaller
+python -m pip install openpyxl tkinterdnd2 !PIP_PYINSTALLER!
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Fallo la instalacion de dependencias.
     pause & exit /b 1
