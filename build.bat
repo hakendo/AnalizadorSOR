@@ -99,9 +99,26 @@ if %ERRORLEVEL% NEQ 0 (
 :: ── 3. Generar ejecutable ────────────────────
 echo.
 echo [3/4] Generando ejecutable !EXE_NAME!.exe...
-python -m PyInstaller --onefile --windowed --name "!EXE_NAME!" ^
-    --collect-all tkinterdnd2 ^
-    main.py
+
+if "!TARGET_WIN7!"=="1" (
+    :: Empacar DLLs de Windows 8+ que faltan en Win7
+    set "W7D=%WINDIR%\System32"
+    set "W7_FLAGS="
+    if exist "!W7D!\api-ms-win-core-path-l1-1-0.dll"    set "W7_FLAGS=!W7_FLAGS! --add-binary \"!W7D!\api-ms-win-core-path-l1-1-0.dll;.\""
+    if exist "!W7D!\api-ms-win-crt-runtime-l1-1-0.dll"  set "W7_FLAGS=!W7_FLAGS! --add-binary \"!W7D!\api-ms-win-crt-runtime-l1-1-0.dll;.\""
+    if exist "!W7D!\api-ms-win-crt-math-l1-1-0.dll"     set "W7_FLAGS=!W7_FLAGS! --add-binary \"!W7D!\api-ms-win-crt-math-l1-1-0.dll;.\""
+    if exist "!W7D!\api-ms-win-crt-stdio-l1-1-0.dll"    set "W7_FLAGS=!W7_FLAGS! --add-binary \"!W7D!\api-ms-win-crt-stdio-l1-1-0.dll;.\""
+    if exist "!W7D!\api-ms-win-crt-locale-l1-1-0.dll"   set "W7_FLAGS=!W7_FLAGS! --add-binary \"!W7D!\api-ms-win-crt-locale-l1-1-0.dll;.\""
+    if exist "!W7D!\api-ms-win-crt-heap-l1-1-0.dll"     set "W7_FLAGS=!W7_FLAGS! --add-binary \"!W7D!\api-ms-win-crt-heap-l1-1-0.dll;.\""
+    python -m PyInstaller --onefile --windowed --name "!EXE_NAME!" ^
+        --collect-all tkinterdnd2 ^
+        !W7_FLAGS! ^
+        main.py
+) else (
+    python -m PyInstaller --onefile --windowed --name "!EXE_NAME!" ^
+        --collect-all tkinterdnd2 ^
+        main.py
+)
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Fallo la compilacion. Revise los mensajes anteriores.
     pause & exit /b 1
