@@ -1,6 +1,6 @@
 # Analizador SOR — Fibra Óptica
 
-Aplicación de escritorio para Windows que extrae métricas de archivos OTDR (`.sor`) y las exporta a Excel.
+Aplicación de escritorio para Windows que extrae métricas de archivos OTDR (`.sor` y `.trc`) y las exporta a Excel.
 
 ## Captura de pantalla
 
@@ -10,7 +10,7 @@ Aplicación de escritorio para Windows que extrae métricas de archivos OTDR (`.
 
 ## ¿Qué hace?
 
-Lee archivos de traza OTDR en formato Bellcore SR-4731 (generados por equipos EXFO) y por cada filamento extrae:
+Lee archivos de traza OTDR en formato Bellcore SR-4731 (`.sor`) o en el formato nativo EXFO (`.trc`, generado por FTBx / software Metrino). El formato se detecta por el contenido del archivo. Por cada filamento extrae:
 
 | Métrica | Descripción |
 |---|---|
@@ -40,7 +40,9 @@ carpeta-raíz/
     └── ...
 ```
 
-> Solo se procesan los archivos SOR **sin sufijo** (bidireccionales). Los archivos con sufijo `corta` o `larga` se ignoran automáticamente.
+> El número de fibra se toma del nombre del archivo (`fibra 3`, `filamento 3`, `Fiber3`, `hilo 3`). Si una misma fibra existe como `.sor` y `.trc`, se usa el `.trc`.
+>
+> Solo se procesan los archivos **sin sufijo** (bidireccionales). Los archivos con sufijo `corta` o `larga` se ignoran automáticamente.
 
 ## Instalación
 
@@ -59,7 +61,7 @@ python main.py
 ```
 
 1. Selecciona la **carpeta raíz** que contiene las subcarpetas de cada cable
-2. Presiona **Analizar archivos** — procesa todos los `.sor` con barra de progreso
+2. Presiona **Analizar archivos** — procesa todos los `.sor` / `.trc` con barra de progreso
 3. Presiona **Exportar Excel** — genera el archivo y lo abre automáticamente
 
 ### Generar ejecutable `.exe` para Windows
@@ -76,6 +78,7 @@ El ejecutable queda en `dist\AnalizadorSOR.exe`.
 sor_analyzer/
 ├── main.py             # GUI (tkinter)
 ├── sor_parser.py       # Parser binario Bellcore SR-4731 / EXFO
+├── trc_parser.py       # Lector del formato nativo EXFO .trc
 ├── excel_exporter.py   # Generador Excel (openpyxl)
 ├── requirements.txt
 └── build.bat           # PyInstaller → .exe
@@ -84,7 +87,7 @@ sor_analyzer/
 ## Compatibilidad
 
 - Equipos OTDR: **EXFO FTBx** (probado con FTBx-735C-SM1-EA)
-- Formato: Bellcore SR-4731 rev 2.0
+- Formato: Bellcore SR-4731 rev 2.0 (`.sor`) y EXFO nativo `AppReg Format Ex` (`.trc`)
 - Python: 3.10+
 - OS: Windows (GUI), Linux/macOS (solo parseo/exportación)
 

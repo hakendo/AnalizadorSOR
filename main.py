@@ -80,7 +80,7 @@ class App(_BASE):
                   padx=10, pady=3).pack(side="right", padx=10)
 
     def _build_folder_section(self) -> None:
-        frm = tk.LabelFrame(self, text=" Carpeta de archivos SOR ",
+        frm = tk.LabelFrame(self, text=" Carpeta de archivos SOR / TRC ",
                             bg=C_BG, fg=C_DARK, font=("Segoe UI", 9, "bold"))
         frm.pack(fill="x", padx=10, pady=(8, 4))
 
@@ -548,7 +548,7 @@ class App(_BASE):
             messagebox.showwarning("Sin carpeta", "Selecciona primero una carpeta.")
             return
         if not self._cables:
-            messagebox.showwarning("Sin SOR", "No se encontraron archivos SOR.")
+            messagebox.showwarning("Sin archivos", "No se encontraron archivos SOR o TRC.")
             return
         threading.Thread(target=self._run_analyze, daemon=True).start()
 
