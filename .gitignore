@@ -11,9 +11,11 @@ __pycache__/
 # Output Excel files
 FO_Cartilla_FOS_*.xlsx
 
-# SOR data files (no versionar datos de cliente)
+# OTDR data files (no versionar datos de cliente)
 *.sor
 *.SOR
+*.trc
+*.TRC
 
 # Config y datos locales
 config.json

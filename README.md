@@ -1,6 +1,6 @@
 # Analizador SOR — Fibra Óptica
 
-Aplicación de escritorio para Windows que extrae métricas de archivos OTDR (`.sor` y `.trc`) y las exporta a Excel.
+Aplicación de escritorio para Windows que lee mediciones OTDR (`.sor` y `.trc`) y genera la cartilla de filamentos en Excel.
 
 ## Captura de pantalla
 
@@ -8,78 +8,120 @@ Aplicación de escritorio para Windows que extrae métricas de archivos OTDR (`.
 
 > **Para contribuidores:** reemplaza `assets/screenshot.png` con una captura real de la aplicación corriendo en Windows.
 
-## ¿Qué hace?
+## Formatos soportados
 
-Lee archivos de traza OTDR en formato Bellcore SR-4731 (`.sor`) o en el formato nativo EXFO (`.trc`, generado por FTBx / software Metrino). El formato se detecta por el contenido del archivo. Por cada filamento extrae:
+| Extensión | Formato | Origen |
+|---|---|---|
+| `.sor` | Bellcore SR-4731 rev 2.0 | Exportación estándar de EXFO y otros equipos |
+| `.trc` | Nativo EXFO (`AppReg Format Ex`) | EXFO FTBx / software Metrino |
 
-| Métrica | Descripción |
+El formato se detecta por el **contenido** del archivo, no por la extensión. Si una misma fibra existe como `.sor` y `.trc`, se usa el `.trc`.
+
+## ¿Qué extrae?
+
+### Detalle por evento (una hoja por cable)
+
+Cada fibra empieza con la fila de **inicio**, sigue con una fila por **empalme** y termina con una fila **Fin** (fin de fibra) que muestra el último tramo.
+
+| Columna | Descripción |
 |---|---|
-| Posición (km) | Ubicación del evento/empalme en la fibra |
-| Longitud del intervalo (km) | Distancia entre eventos consecutivos |
-| Pérdida del intervalo (dB) | Pérdida en cada tramo |
-| Pérdida promedio (dB/km) | Coeficiente de atenuación del tramo |
-| Pérdida de unión (dB) | Pérdida puntual en el empalme |
-| Pérdida de unión promedio (dB) | Promedio de todos los empalmes de la fibra |
-| Pérdida de unión máxima (dB) | Empalme con mayor pérdida en la fibra |
+| N° Evento | Número del evento (`Fin` para el fin de fibra) |
+| Posición (km) | Ubicación del evento en la fibra |
+| Long. Intervalo (km) | Distancia desde el evento anterior |
+| Pérd. Intervalo (dB) | Pérdida del tramo de fibra que termina en el evento |
+| Pérd. Prom. (dB/km) | Atenuación de ese tramo |
+| Pérd. Unión (dB) | Pérdida puntual del empalme (vacía en la fila Fin) |
+| Pérd. Unión Prom. / Máx. (dB) | Promedio y máximo de los empalmes de la fibra |
 
-El resultado se exporta a un archivo Excel estandarizado:
+### Resumen por fibra (hoja «Resumen»)
+
+| Columna | Descripción |
+|---|---|
+| Long. Total (km) | Posición del fin de fibra |
+| Pérd. Total (dB) | Pérdida del enlace completo: todos los tramos (incluido el último) + todos los empalmes. Coincide con el *Span Loss* del equipo |
+| Pérd. Prom. (dB/km) | Pérdida total ÷ longitud total |
+| Pérd. Unión Prom. / Máx. (dB) | Estadística de empalmes |
+| N° Empalmes | Cantidad de empalmes (sin contar inicio ni fin) |
+| ∆ Pérd. Unión Máx. | Diferencia contra la medición anterior del historial |
+| Fecha | Fecha de la medición |
+
+La suma de pérdidas de intervalo y de unión del detalle es igual a la pérdida total del resumen.
+
+El Excel se guarda en la carpeta raíz como:
 ```
 FO_Cartilla_FOS_YYYY-MM.xlsx
 ```
 
 ## Estructura esperada de carpetas
 
+Una subcarpeta por cable, con un archivo por fibra:
+
 ```
 carpeta-raíz/
 ├── nombre-cable-1/
-│   ├── fibra1 nombre-cable-1.sor
-│   ├── fibra2 nombre-cable-1.sor
+│   ├── fibra 1 nombre-cable-1.trc
+│   ├── fibra 2 nombre-cable-1.trc
 │   └── ...
 └── nombre-cable-2/
-    ├── fibra1 nombre-cable-2.sor
+    ├── filamento 1 nombre-cable-2.sor
     └── ...
 ```
 
-> El número de fibra se toma del nombre del archivo (`fibra 3`, `filamento 3`, `Fiber3`, `hilo 3`). Si una misma fibra existe como `.sor` y `.trc`, se usa el `.trc`.
->
-> Solo se procesan los archivos **sin sufijo** (bidireccionales). Los archivos con sufijo `corta` o `larga` se ignoran automáticamente.
+- El número de fibra se toma del nombre del archivo: `fibra 3`, `filamento 3`, `Fiber3`, `hilo 3` (sin importar mayúsculas).
+- Archivos con `corta` o `larga` en el nombre se tratan como mediciones en esa dirección; el resto como **bidireccional (normal)**. Qué direcciones se procesan se elige en la app.
+- Los archivos sin número de fibra reconocible se ignoran.
+
+## Funciones de la aplicación
+
+- **Selección de carpeta** con botón o arrastrando la carpeta a la ventana (requiere `tkinterdnd2`).
+- **Direcciones**: procesar normal, corta y/o larga.
+- **Filtro por fibra**: elegir qué fibras de cada cable se incluyen.
+- **Vista previa** de los datos antes de exportar, con colores según umbrales.
+- **Umbrales configurables** (pérdida de unión, atenuación, pérdida de intervalo): las celdas que los superan se marcan en naranja (> 80 %) o rojo.
+- **Columnas del Excel** configurables (botón «Columnas Excel»).
+- **Historial**: cada exportación guarda un resumen en `mediciones_historial.json` y el Excel muestra la variación de la pérdida de unión máxima respecto a la medición anterior.
+- **Configuración persistente** en `config.json` (última carpeta, umbrales, columnas, filtros).
 
 ## Instalación
 
-**Requisitos:** Python 3.10+ con pip
+**Requisitos:** Python 3.10+ (o 3.7 para la build de Windows 7)
 
 ```bash
-pip install openpyxl
+pip install -r requirements.txt
 ```
 
-## Uso
+`tkinterdnd2` es opcional: solo habilita el drag & drop.
 
-### Ejecutar la aplicación
+## Uso
 
 ```bash
 python main.py
 ```
 
-1. Selecciona la **carpeta raíz** que contiene las subcarpetas de cada cable
-2. Presiona **Analizar archivos** — procesa todos los `.sor` / `.trc` con barra de progreso
-3. Presiona **Exportar Excel** — genera el archivo y lo abre automáticamente
+1. Selecciona (o arrastra) la **carpeta raíz** que contiene las subcarpetas de cada cable
+2. Revisa los cables detectados y, si hace falta, usa **Filtrar fibras**
+3. Presiona **Analizar archivos** — procesa los `.sor` / `.trc` con barra de progreso y muestra la vista previa
+4. Presiona **Exportar Excel** — genera el archivo y lo abre automáticamente
 
-### Generar ejecutable `.exe` para Windows
+## Generar ejecutable `.exe`
 
-```bash
-build.bat
+```bat
+build.bat          :: Windows 10 / 11  → dist\AnalizadorSOR.exe
+build.bat win7     :: compatible con Windows 7 (Python 3.7) → dist\AnalizadorSOR_Win7.exe
 ```
 
-El ejecutable queda en `dist\AnalizadorSOR.exe`.
+El script instala Python y PyInstaller si no están presentes.
 
 ## Estructura del proyecto
 
 ```
 sor_analyzer/
 ├── main.py             # GUI (tkinter)
-├── sor_parser.py       # Parser binario Bellcore SR-4731 / EXFO
+├── sor_parser.py       # Parser Bellcore SR-4731, armado de resultados y escaneo de carpetas
 ├── trc_parser.py       # Lector del formato nativo EXFO .trc
 ├── excel_exporter.py   # Generador Excel (openpyxl)
+├── history.py          # Historial de mediciones (JSON)
+├── config.py           # Configuración persistente y perfiles de equipo
 ├── requirements.txt
 └── build.bat           # PyInstaller → .exe
 ```
@@ -87,28 +129,20 @@ sor_analyzer/
 ## Compatibilidad
 
 - Equipos OTDR: **EXFO FTBx** (probado con FTBx-735C-SM1-EA)
-- Formato: Bellcore SR-4731 rev 2.0 (`.sor`) y EXFO nativo `AppReg Format Ex` (`.trc`)
-- Python: 3.10+
-- OS: Windows (GUI), Linux/macOS (solo parseo/exportación)
+- Python: 3.10+ (3.7 para la build de Windows 7)
+- OS: Windows (GUI); el parseo y la exportación también funcionan en Linux/macOS
+
+## Historial de cambios relevantes
+
+- **Soporte `.trc`** (formato nativo EXFO).
+- **Corrección de distancias en `.sor`**: versiones anteriores calculaban posiciones y longitudes ~21 veces más cortas (lectura errónea del índice de grupo y de la unidad de tiempo). Los Excel y el historial generados antes de esta corrección tienen longitudes y pérdidas por tramo incorrectas; las pérdidas de unión sí eran correctas.
+- **Pérdida total** ahora incluye el último tramo y los empalmes (antes los omitía).
+- **N° Empalmes** ya no cuenta el evento de inicio.
 
 ## Mejoras propuestas
 
-### Alta prioridad
-
-- **Soporte multidireccional** — Procesar también los archivos `corta` y `larga` de cada fibra y mostrarlos como columnas separadas en el Excel, permitiendo comparar ambas direcciones de medición.
-- **Validación de umbrales** — Marcar en rojo en el Excel los empalmes que superen un umbral configurable (ej. pérdida > 0.5 dB), facilitando identificar problemas sin revisar manualmente cada valor.
-- **Vista previa en la app** — Mostrar una tabla con los datos parseados dentro de la misma ventana antes de exportar, para verificar que los datos son correctos.
-
-### Media prioridad
-
-- **Compatibilidad con más equipos OTDR** — Actualmente probado solo con EXFO FTBx. Agregar soporte para Anritsu, VIAVI (JDSU), Yokogawa y AFL, que usan variantes del mismo formato Bellcore SR-4731.
-- **Exportar a PDF** — Generar un informe PDF con formato de cartilla, listo para entregar sin necesitar Excel.
-- **Gráfico de la traza** — Mostrar la curva de atenuación OTDR (dB vs. km) usando `matplotlib`, con los eventos marcados, lo que permite detectar anomalías visualmente.
-- **Soporte doble longitud de onda** — Algunos equipos miden a 1310 nm y 1550 nm simultáneamente. Separar ambos en hojas distintas del Excel.
-
-### Baja prioridad
-
-- **Drag & drop** — Permitir arrastrar la carpeta directamente a la ventana en lugar de usar el selector de carpetas.
-- **Historial de mediciones** — Comparar la medición actual con una anterior para detectar degradación de empalmes en el tiempo.
-- **Filtro por fibra** — Seleccionar qué fibras incluir en la exportación (útil cuando solo algunas fibras tienen datos nuevos).
-- **Configuración persistente** — Guardar la última carpeta usada y preferencias en un archivo `.json` para no tener que reconfigurar cada vez.
+- **Más equipos OTDR** — Probar y ajustar con Anritsu, VIAVI (JDSU), Yokogawa y AFL.
+- **Exportar a PDF** — Informe con formato de cartilla, listo para entregar sin Excel.
+- **Gráfico de la traza** — Curva OTDR (dB vs. km) con los eventos marcados, a partir de los datos de muestra que ya traen los archivos.
+- **Doble longitud de onda** — Separar mediciones 1310 / 1550 nm en hojas distintas.
+- **Comparación de direcciones** — Mostrar corta y larga lado a lado y calcular el promedio bidireccional de cada empalme.
