@@ -185,7 +185,8 @@ def _summary_value(col: dict, fiber: dict, delta_max: float | None) -> Any:
     if key == 'delta_union_max':
         return delta_max
     if key == 'n_empalmes':
-        return len(fiber.get('events', []))
+        return fiber.get('n_empalmes',
+                         sum(1 for e in fiber.get('events', []) if e.get('tipo') == 'empalme'))
     if fld == 'direction_label':
         return _DIR_LABELS.get(fiber.get('direction', 'normal'), fiber.get('direction'))
     return fiber.get(fld)

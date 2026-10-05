@@ -522,7 +522,7 @@ class App(_BASE):
                         self._tree.insert("", "end",
                                           values=("…", "…", "…", "…", "…", "…", "…", "…"))
                         return
-                    pu  = ev.get('perdida_union_db', 0)
+                    pu  = ev.get('perdida_union_db') or 0   # None on the end-of-fiber row
                     pp  = ev.get('perdida_promedio_dbkm', 0)
                     pi  = ev.get('perdida_intervalo_db', 0)
                     tag = ""
@@ -538,7 +538,7 @@ class App(_BASE):
                         f"{ev.get('longitud_intervalo_km', 0):.4f}",
                         f"{pi:.4f}",
                         f"{pp:.4f}",
-                        f"{pu:.4f}",
+                        "" if ev.get('perdida_union_db') is None else f"{pu:.4f}",
                     ))
                     count += 1
 

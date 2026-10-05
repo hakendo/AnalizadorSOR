@@ -173,35 +173,34 @@ def _build_result(filepath: str, meta: dict, raw_events: list[dict]) -> dict:
         if not is_start:
             link_loss += ev['ev_loss_db']
 
-        if ev['is_end']:
+        is_end = ev['is_end']
+        if is_end:
             total_km = pos_km
-            continue
 
         events.append({
-            'n_evento':               ev['n'],
+            'n_evento':               'Fin' if is_end else ev['n'],
+            'tipo':                   'fin' if is_end else 'inicio' if is_start else 'empalme',
             'posicion_km':            round(pos_km, 4),
             'longitud_intervalo_km':  round(interval_km, 4),
             'perdida_intervalo_db':   round(ev['atten_dbkm'] * interval_km, 4),
             'perdida_promedio_dbkm':  round(ev['atten_dbkm'], 4),
-            'perdida_union_db':       round(ev['ev_loss_db'], 4) if not is_start else 0.0,
-            '_is_start':              is_start,
+            'perdida_union_db':       (None if is_end else
+                                       0.0 if is_start else round(ev['ev_loss_db'], 4)),
         })
         prev_km = pos_km
+        if is_end:
+            break
 
     if total_km == 0.0 and events:
         total_km = events[-1]['posicion_km']
 
-    splice_losses = [e['perdida_union_db']
-                     for e in events
-                     if not e.get('_is_start') and e['perdida_union_db'] >= 0]
+    splices = [e for e in events if e['tipo'] == 'empalme']
+    splice_losses = [e['perdida_union_db'] for e in splices if e['perdida_union_db'] >= 0]
 
     union_prom = round(sum(splice_losses) / len(splice_losses), 4) if splice_losses else 0.0
     union_max  = round(max(splice_losses), 4) if splice_losses else 0.0
     total_loss = round(link_loss, 4)
     avg_dbkm   = round(total_loss / total_km, 4) if total_km > 0 else 0.0
-
-    for e in events:
-        e.pop('_is_start', None)
 
     return {
         'filepath':                  filepath,
@@ -209,6 +208,7 @@ def _build_result(filepath: str, meta: dict, raw_events: list[dict]) -> dict:
         'events':                    events,
         'perdida_union_promedio_db': union_prom,
         'perdida_union_maxima_db':   union_max,
+        'n_empalmes':                len(splices),
         'longitud_total_km':         round(total_km, 4),
         'perdida_total_db':          total_loss,
         'perdida_promedio_dbkm':     avg_dbkm,
