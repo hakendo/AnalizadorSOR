@@ -69,8 +69,10 @@ class App(_BASE):
         self._build_options_section()
         self._build_cables_section()
         self._build_progress_section()
-        self._build_preview_section()
+        # Buttons are packed before the expanding preview so they keep their
+        # space at the bottom when the window is short.
         self._build_buttons()
+        self._build_preview_section()
 
     def _build_titlebar(self) -> None:
         bar = tk.Frame(self, bg=C_DARK, pady=6)
@@ -190,7 +192,7 @@ class App(_BASE):
 
     def _build_buttons(self) -> None:
         frm = tk.Frame(self, bg=C_BG)
-        frm.pack(fill="x", padx=10, pady=(4, 10))
+        frm.pack(side="bottom", fill="x", padx=10, pady=(4, 10))
 
         self._btn_export = tk.Button(
             frm, text="Exportar Excel",
