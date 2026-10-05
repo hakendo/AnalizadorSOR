@@ -31,7 +31,17 @@ C_TEXT  = "#222222"
 
 class App(_BASE):
     def __init__(self) -> None:
-        super().__init__()
+        # Init plain Tk first: TkinterDnD.Tk.__init__ raises if the tkdnd
+        # binary can't load (e.g. built for Tk 8.6 but running on Tk 9),
+        # and drag & drop is optional.
+        tk.Tk.__init__(self)
+        self._has_dnd = False
+        if HAS_DND:
+            try:
+                self.TkdndVersion = TkinterDnD._require(self)
+                self._has_dnd = True
+            except Exception:
+                pass
         self.title("Analizador SOR — Fibra Óptica")
         self.geometry("900x640")
         self.minsize(780, 560)
@@ -97,7 +107,7 @@ class App(_BASE):
                   bg=C_MED, fg="white", font=("Segoe UI", 9, "bold"),
                   relief="flat", padx=10, pady=4).pack(side="right")
 
-        if HAS_DND:
+        if self._has_dnd:
             drop_frm = tk.Frame(frm, bg=C_LIGHT, pady=6)
             drop_frm.pack(fill="x", padx=6, pady=(0, 4))
             tk.Label(drop_frm,
@@ -108,7 +118,7 @@ class App(_BASE):
             drop_frm.dnd_bind('<<Drop>>', self._on_drop)
         else:
             tk.Label(frm,
-                     text="Instala tkinterdnd2 para habilitar drag & drop",
+                     text="Drag & drop no disponible (requiere tkinterdnd2)",
                      bg=C_BG, fg="#999", font=("Segoe UI", 8)).pack(anchor="w", padx=6)
 
     def _build_options_section(self) -> None:
